@@ -4,10 +4,13 @@
   margin: 0;
   padding: 0;
 }
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   width: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 }
 
 /* ===== LAYOUT ===== */
@@ -27,7 +30,6 @@ html, body, #root {
 }
 
 .sidebar-header {
-  
   padding: 16px;
   font-size: 1.4rem;
   font-weight: bold;
@@ -57,19 +59,19 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   position: relative;
-  background: url("https://www.transparenttextures.com/patterns/white-wall-3.png"); /* WhatsApp-style pattern */
+  background: linear-gradient(135deg, #000000 30%, #ffffff 100%);
   background-color: #ece5dd;
   background-size: cover;
 }
 
 /* Chat header */
 .chat-header {
-  position: sticky; 
+  position: sticky;
   top: 0;
   z-index: 2;
-  
+
   padding: 16px 20px;
-  background: #101112;
+  background: linear-gradient(135deg, #414141 30%, #9dffb9 100%);
   border-bottom: 1px solid #ccc;
   font-weight: bold;
   font-size: 1.2rem;
@@ -115,7 +117,7 @@ html, body, #root {
   position: sticky;
   bottom: 0;
   padding: 12px 20px;
-  background: #f0f2f5;
+  background: linear-gradient(135deg, #414141 30%, #9dffb9 100%);
   border-top: 1px solid #ccc;
   display: flex;
   gap: 10px;
