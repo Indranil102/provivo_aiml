@@ -10,8 +10,15 @@ from .nlp import MeetingIntentDetector
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import uuid
+from rest_framework.permissions import AllowAny   # ← import
 
 from .serializers import GroupSerializer
+
+@api_view(['GET'])
+@permission_classes([AllowAny])          # open to anyone
+def group_list(request):
+    groups = Group.objects.all()
+    return Response(GroupSerializer(groups, many=True).data)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def group_detail(request):

@@ -2,20 +2,22 @@
 import React from "react";
 
 function Message({ message, currentUser }) {
-  // defensive: skip rendering if user is missing
   if (!message?.user || !currentUser) return null;
 
-  const isCurrentUser = message.user.id === currentUser.id;
+  const isMe = message.user.id === currentUser.id;
 
   return (
-    <div className={`message ${isCurrentUser ? "message-sent" : "message-received"}`}>
-      <div className="message-header">
-        <span className="message-author">{message.user.username}</span>
-        <span className="message-time">
-          {new Date(message.timestamp).toLocaleTimeString()}
+    <div className={`bubble ${isMe ? "me" : "other"}`}>
+      <div className="bubble-header">
+        <span className="author">{message.user.username}</span>
+        <span className="time">
+          {new Date(message.timestamp).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </span>
       </div>
-      <div className="message-content">{message.content}</div>
+      <div className="bubble-content">{message.content}</div>
     </div>
   );
 }
