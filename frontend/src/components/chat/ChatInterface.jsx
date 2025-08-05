@@ -80,9 +80,7 @@ function ChatInterface() {
     <div className="chat-container">
       <div className="chat-header">
         <h2>Group: {group.name}</h2>
-        <p>
-          Members: {group.members?.map((m) => m.username).join(", ") || "None"}
-        </p>
+        
       </div>
 
       <div className="chat-messages">
