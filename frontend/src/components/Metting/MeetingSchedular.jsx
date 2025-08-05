@@ -1,4 +1,3 @@
-// src/components/Meeting/MeetingScheduler.jsx
 import React, { useState, useEffect } from "react";
 import api from "../../services/api";
 import { useAuth } from "../../services/auth";
@@ -46,7 +45,8 @@ function MeetingScheduler({ meeting, onClose }) {
         minute: "2-digit",
       });
 
-      const content = `📅 *Meeting Scheduled*\n🗓️ ${formattedDate} at ${formattedTime}\n👤 Created by: ${meeting.creator?.username}\n🔗 Join: ${meeting.google_meet_link}`;
+      // Use markdown-style link format
+      const content = `📅 *Meeting Scheduled*\n🗓️ ${formattedDate} at ${formattedTime}\n👤 Created by: ${meeting.creator?.username}\n🔗 (https://meet.google.com/xvp-mfko-qwz)`;
 
       await api.post("/chat/messages/", {
         content,

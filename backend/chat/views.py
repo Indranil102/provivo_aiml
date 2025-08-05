@@ -7,13 +7,66 @@ from django.utils import timezone
 from .models import Message, Meeting, Availability, Group
 from .serializers import MessageSerializer, MeetingSerializer, AvailabilitySerializer, GroupSerializer
 from .nlp import MeetingIntentDetector
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 import uuid
+import os
+import datetime
+
+# Load Google credentials
+SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), 'service_account.json')
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+
+def create_google_meet_link(summary, description, start_datetime, end_datetime):
+    try:
+        credentials = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        )
+
+        service = build("calendar", "v3", credentials=credentials)
+        calendar_id = 'primary'  # Or use a shared calendar's email
+
+        event = {
+            "summary": summary,
+            "description": description,
+            "start": {
+                "dateTime": start_datetime.isoformat(),
+                "timeZone": "UTC",
+            },
+            "end": {
+                "dateTime": end_datetime.isoformat(),
+                "timeZone": "UTC",
+            },
+            "conferenceData": {
+                "createRequest": {
+                    "conferenceSolutionKey": {
+                        "type": "hangoutsMeet"
+                    },
+                    "requestId": f"meet-{uuid.uuid4().hex[:8]}"
+                }
+            }
+        }
+
+        created_event = service.events().insert(
+            calendarId=calendar_id,
+            body=event,
+            conferenceDataVersion=1
+        ).execute()
+
+        meet_link = created_event["hangoutLink"]
+        return meet_link
+
+    except Exception as e:
+        print("❌ Google Meet API Error:", str(e))
+        return None
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def group_list(request):
     groups = Group.objects.all()
     return Response(GroupSerializer(groups, many=True).data)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -22,6 +75,7 @@ def group_detail(request):
     if not group:
         return Response({'error': 'User not in any group'}, status=400)
     return Response(GroupSerializer(group).data)
+
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -41,13 +95,9 @@ def chat_view(request):
         content = request.data.get('content', '')
 
         # Save message
-        message = Message.objects.create(
-            user=user,
-            group=group,
-            content=content
-        )
+        message = Message.objects.create(user=user, group=group, content=content)
 
-        # Check for meeting intent using NLP
+        # NLP analysis
         nlp_result = MeetingIntentDetector.process_message(content)
         print("[DEBUG] NLP Result:", nlp_result)
 
@@ -57,33 +107,41 @@ def chat_view(request):
         }
 
         if nlp_result['has_meeting_intent']:
-            # Create meeting
+            suggested_times = nlp_result.get("suggested_times", [])
+            fallback_time = timezone.now() + timezone.timedelta(hours=1)
+
+            # Prefer suggested time if available
+            start_dt = timezone.datetime.fromisoformat(suggested_times[0]) if suggested_times else fallback_time
+            end_dt = start_dt + timezone.timedelta(hours=1)
+
+            # Create real Google Meet link
+            meet_link = create_google_meet_link(
+                summary=f"Meeting initiated by {user.username}",
+                description=content,
+                start_datetime=start_dt,
+                end_datetime=end_dt
+            )
+
             meeting = Meeting.objects.create(
                 group=group,
                 title=f"Meeting initiated by {user.username}",
                 description=content,
-                scheduled_time=timezone.now() + timezone.timedelta(hours=1),
-                google_meet_link=f"https://meet.google.com/{uuid.uuid4().hex[:10]}",
+                scheduled_time=start_dt,
+                google_meet_link="https://meet.google.com/xvp-mfko-qwz",
                 creator=user
             )
 
-            # Create availability objects
             for member in group.user_set.all():
-                Availability.objects.create(
-                    user=member,
-                    meeting=meeting
-                )
+                Availability.objects.create(user=member, meeting=meeting)
 
-            # Attach suggested_times directly to the meeting instance (not stored in DB)
-            meeting.suggested_times = nlp_result.get('suggested_times', [])
+            meeting.suggested_times = suggested_times
+            serialized = MeetingSerializer(meeting).data
+            serialized["suggested_times"] = suggested_times
 
-            # Serialize with injected suggested_times
-            serialized_meeting = MeetingSerializer(meeting).data
-            serialized_meeting['suggested_times'] = meeting.suggested_times
-
-            response_data['meeting'] = serialized_meeting
+            response_data["meeting"] = serialized
 
         return Response(response_data)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -100,6 +158,7 @@ def schedule_meeting(request):
     except Meeting.DoesNotExist:
         return Response({'error': 'Meeting not found'}, status=404)
 
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def update_availability(request):
@@ -107,10 +166,7 @@ def update_availability(request):
     is_available = request.data.get('is_available')
 
     try:
-        availability = Availability.objects.get(
-            meeting_id=meeting_id,
-            user=request.user
-        )
+        availability = Availability.objects.get(meeting_id=meeting_id, user=request.user)
         availability.is_available = is_available
         availability.save()
 
