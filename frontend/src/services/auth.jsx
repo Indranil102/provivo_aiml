@@ -13,7 +13,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (token) {
-      // In a real app, you'd validate the token with the backend
       const userData = localStorage.getItem('user');
       if (userData) {
         setUser(JSON.parse(userData));

@@ -1,43 +1,62 @@
 // src/components/Meeting/MeetingScheduler.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../../services/api";
-import { useAuth } from "../../services/auth";   // to get current user
+import { useAuth } from "../../services/auth";
 import "./Meeting.css";
 
 function MeetingScheduler({ meeting, onClose }) {
-  const { user } = useAuth();                    // current logged-in user
+  const { user } = useAuth();
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 3 quick slots: +1h, +2h, +3h
-  const slots = [
-    new Date(Date.now() + 3600000),
-    new Date(Date.now() + 7200000),
-    new Date(Date.now() + 10800000),
-  ];
+  // Debug log for raw meeting prop
+  useEffect(() => {
+    console.log("[MeetingScheduler] Full meeting object from backend:", meeting);
+  }, [meeting]);
+
+  // Extract and convert slots
+  const slots = Array.isArray(meeting?.suggested_times)
+    ? meeting.suggested_times.map((iso) => new Date(iso))
+    : [];
+
+  // Debug log for slots
+  useEffect(() => {
+    console.log("[MeetingScheduler] Extracted slots from NLP:", slots);
+  }, [slots]);
 
   const handleSchedule = async () => {
     if (!selected) return;
 
     setLoading(true);
     try {
-      // 1. schedule on backend
       await api.post("/chat/schedule/", {
         meeting_id: meeting.id,
         time: selected,
       });
 
-      // 2. send chat message
-      const dt = new Date(selected).toLocaleString();
+      const dtObj = new Date(selected);
+      const formattedDate = dtObj.toLocaleDateString(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const formattedTime = dtObj.toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const content = `📅 *Meeting Scheduled*\n🗓️ ${formattedDate} at ${formattedTime}\n👤 Created by: ${meeting.creator?.username}\n🔗 Join: ${meeting.google_meet_link}`;
+
       await api.post("/chat/messages/", {
-        content: `Meeting scheduled at ${dt}`,
+        content,
       });
 
       alert("Meeting scheduled!");
       onClose();
     } catch (err) {
-      console.error(err);
-      alert("Failed to schedule");
+      console.error("[MeetingScheduler] Scheduling error:", err);
+      alert("Failed to schedule meeting");
     } finally {
       setLoading(false);
     }
@@ -46,22 +65,27 @@ function MeetingScheduler({ meeting, onClose }) {
   return (
     <div className="meeting-modal-overlay">
       <div className="meeting-modal">
-        <h3>Choose the best time for the meeting</h3>
+        <h3>Choose a meeting time</h3>
         <p>{meeting.description}</p>
 
-        {/* Time selector */}
-        <select
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-          className="time-picker"
-        >
-          <option value="" disabled>Pick a slot</option>
-          {slots.map((dt) => (
-            <option key={dt.toISOString()} value={dt.toISOString()}>
-              {dt.toLocaleString()}
+        {slots.length > 0 ? (
+          <select
+            value={selected}
+            onChange={(e) => setSelected(e.target.value)}
+            className="time-picker"
+          >
+            <option value="" disabled>
+              Pick a slot
             </option>
-          ))}
-        </select>
+            {slots.map((dt) => (
+              <option key={dt.toISOString()} value={dt.toISOString()}>
+                {dt.toLocaleString()}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <p className="no-slots">⚠️ No suggested times available.</p>
+        )}
 
         <div className="meeting-actions">
           <button onClick={handleSchedule} disabled={!selected || loading}>

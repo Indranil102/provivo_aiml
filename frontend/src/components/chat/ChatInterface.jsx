@@ -14,21 +14,19 @@ function ChatInterface() {
   const [pendingMeeting, setPendingMeeting] = useState(null);
   const [group, setGroup] = useState(null);
 
-  /* ---------- load group ---------- */
   useEffect(() => {
     fetchGroup()
       .then((res) => {
-        console.log("members", res.data.members);   // <-- log members
+        console.log("Group members:", res.data.members);
         setGroup(res.data);
       })
       .catch((err) => console.error("Group fetch error:", err));
   }, []);
 
-  /* ---------- load messages ---------- */
   useEffect(() => {
     if (!group) return;
     fetchMessages();
-    const interval = setInterval(fetchMessages, 5000);
+    const interval = setInterval(fetchMessages, 5000); // Polling every 5s
     return () => clearInterval(interval);
   }, [group]);
 
@@ -50,9 +48,19 @@ function ChatInterface() {
       const { data } = await api.post("/chat/messages/", {
         content: newMessage,
       });
-      setMessages((prev) => [...prev, data.message]);
-      setNewMessage("");
-      if (data.meeting) setPendingMeeting(data.meeting);
+
+      const newMsg = data.message || data; // FIX: support both response formats
+      if (!newMsg || !newMsg.id) {
+        console.error("Invalid message format from API:", data);
+      } else {
+        setMessages((prev) => [...prev, newMsg]);
+      }
+
+      if (data.meeting) {
+        setPendingMeeting(data.meeting);
+      }
+
+      setNewMessage(""); // Clear input after sending
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
@@ -60,7 +68,6 @@ function ChatInterface() {
     }
   };
 
-  /* ---------- render ---------- */
   if (!group) {
     return (
       <div className="chat-container">
@@ -74,7 +81,7 @@ function ChatInterface() {
       <div className="chat-header">
         <h2>Group: {group.name}</h2>
         <p>
-          Members: {group.members?.map(m => m.username).join(', ') || 'None'}
+          Members: {group.members?.map((m) => m.username).join(", ") || "None"}
         </p>
       </div>
 
