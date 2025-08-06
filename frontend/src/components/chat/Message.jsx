@@ -1,4 +1,4 @@
-// src/components/Chat/Message.jsx
+
 import React from "react";
 
 function Message({ message, currentUser }) {

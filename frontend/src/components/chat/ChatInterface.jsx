@@ -1,4 +1,4 @@
-// src/components/Chat/ChatInterface.jsx
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../services/auth";
 import api, { fetchGroup } from "../../services/api";
@@ -49,7 +49,7 @@ function ChatInterface() {
         content: newMessage,
       });
 
-      const newMsg = data.message || data; // FIX: support both response formats
+      const newMsg = data.message || data; 
       if (!newMsg || !newMsg.id) {
         console.error("Invalid message format from API:", data);
       } else {
@@ -60,7 +60,7 @@ function ChatInterface() {
         setPendingMeeting(data.meeting);
       }
 
-      setNewMessage(""); // Clear input after sending
+      setNewMessage(""); 
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {

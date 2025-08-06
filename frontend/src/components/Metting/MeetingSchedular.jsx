@@ -8,17 +8,17 @@ function MeetingScheduler({ meeting, onClose }) {
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Debug log for raw meeting prop
+  
   useEffect(() => {
     console.log("[MeetingScheduler] Full meeting object from backend:", meeting);
   }, [meeting]);
 
-  // Extract and convert slots
+
   const slots = Array.isArray(meeting?.suggested_times)
     ? meeting.suggested_times.map((iso) => new Date(iso))
     : [];
 
-  // Debug log for slots
+
   useEffect(() => {
     console.log("[MeetingScheduler] Extracted slots from NLP:", slots);
   }, [slots]);
@@ -45,7 +45,7 @@ function MeetingScheduler({ meeting, onClose }) {
         minute: "2-digit",
       });
 
-      // Use markdown-style link format
+     
       const content = `📅 *Meeting Scheduled*\n🗓️ ${formattedDate} at ${formattedTime}\n👤 Created by: ${meeting.creator?.username}\n🔗 (https://meet.google.com/xvp-mfko-qwz)`;
 
       await api.post("/chat/messages/", {

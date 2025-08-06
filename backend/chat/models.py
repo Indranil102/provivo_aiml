@@ -13,7 +13,7 @@ class Group(models.Model):
 
     @classmethod
     def create_defaults(cls):
-        for name in ('Team Alpha', 'Team Beta', 'Team Gamma'):
+        for name in ('Team zee', 'Team Beta', 'Team Gamma'):
             cls.objects.get_or_create(name=name)
 
 

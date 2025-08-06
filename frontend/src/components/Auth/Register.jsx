@@ -1,4 +1,3 @@
-// frontend/src/components/Auth/Register.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../services/auth";
@@ -25,8 +24,8 @@ function Register() {
       .get("/chat/groups/")
       .then((res) => {
         setGroups(res.data);
-        // default to Team Alpha
-        const alpha = res.data.find((g) => g.name === "Team Alpha");
+        
+        const alpha = res.data.find((g) => g.name === "Team zee");
         if (alpha) setGroupId(alpha.id.toString());
       })
       .catch(console.error);
